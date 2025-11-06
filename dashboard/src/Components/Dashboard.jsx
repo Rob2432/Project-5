@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -7,6 +8,8 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,7 +126,11 @@ const Dashboard = () => {
           </thead>
           <tbody>
             {filteredCoins.slice(0, 50).map((coin) => (
-              <tr key={coin.id}>
+              <tr
+                key={coin.id}
+                onClick={() => navigate(`/coin/${coin.id}`)}
+                style={{ cursor: "pointer" }}
+              >
                 <td>{coin.market_cap_rank}</td>
                 <td>
                   <img
