@@ -1,6 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
+import { Bar, Pie } from "react-chartjs-2";
 import "./Dashboard.css";
+
+// ✅ Register chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 const Dashboard = () => {
   const [coins, setCoins] = useState([]);
@@ -11,6 +33,7 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
+  // Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -28,6 +51,7 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  // Update filter + search
   useEffect(() => {
     handleFilterAndSearch();
   }, [searchQuery, filterCategory]);
@@ -56,11 +80,129 @@ const Dashboard = () => {
 
   if (loading) return <div className="dashboard-loading">Loading data...</div>;
 
+  // --- Chart Data ---
+  const top10MarketCap = [...filteredCoins]
+    .sort((a, b) => b.market_cap - a.market_cap)
+    .slice(0, 10);
+
+  const top10BarData = {
+    labels: top10MarketCap.map((coin) => coin.name),
+    datasets: [
+      {
+        label: "Market Cap (USD)",
+        data: top10MarketCap.map((coin) => coin.market_cap),
+        backgroundColor: "rgba(0, 255, 204, 0.6)",
+        borderColor: "#00ffcc",
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const top10BarOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: "#00ffcc" },
+      },
+      title: {
+        display: true,
+        text: "Top 10 Coins by Market Cap",
+        color: "#00ffcc",
+      },
+    },
+    scales: {
+      x: {
+        ticks: { color: "#00ffcc" },
+        grid: { color: "#00ffcc33" },
+      },
+      y: {
+        ticks: { color: "#00ffcc" },
+        grid: { color: "#00ffcc33" },
+      },
+    },
+  };
+
+  // Pie Chart: Top 5 coins vs Rest
+  const totalMarketCap = filteredCoins.reduce(
+    (sum, coin) => sum + coin.market_cap,
+    0
+  );
+  const top5Coins = [...filteredCoins]
+    .sort((a, b) => b.market_cap - a.market_cap)
+    .slice(0, 5);
+
+  const restMarketCap =
+    totalMarketCap -
+    top5Coins.reduce((sum, coin) => sum + coin.market_cap, 0);
+
+  const pieData = {
+    labels: [...top5Coins.map((coin) => coin.name), "Rest of Market"],
+    datasets: [
+      {
+        label: "Market Share",
+        data: [...top5Coins.map((coin) => coin.market_cap), restMarketCap],
+        backgroundColor: [
+          "#00ffcc",
+          "#00e6b8",
+          "#00d4a6",
+          "#00c2a3",
+          "#00b290",
+          "#008d6a",
+        ],
+        borderColor: "#121212",
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const pieOptions = {
+    plugins: {
+      legend: {
+        labels: { color: "#00ffcc" },
+      },
+      title: {
+        display: true,
+        text: "Top 5 Coins vs Rest of Market",
+        color: "#00ffcc",
+      },
+    },
+  };
+
+  // --- Summary Stats ---
+  const totalCoins = filteredCoins.length;
+  const avgPrice =
+    filteredCoins.length > 0
+      ? (
+          filteredCoins.reduce((sum, coin) => sum + coin.current_price, 0) /
+          filteredCoins.length
+        ).toFixed(2)
+      : 0;
+  const highestMarketCap =
+    filteredCoins.length > 0
+      ? Math.max(...filteredCoins.map((coin) => coin.market_cap)).toLocaleString()
+      : 0;
+
   return (
     <div className="dashboard-container">
       <h1 className="dashboard-title">💰 Crypto Market Dashboard</h1>
 
-      {/* --- Search & Filter --- */}
+      {/* --- Summary Section --- */}
+      <div className="summary-section">
+        <div className="summary-card">
+          <h3>Total Coins</h3>
+          <p>{totalCoins}</p>
+        </div>
+        <div className="summary-card">
+          <h3>Average Price (USD)</h3>
+          <p>${avgPrice}</p>
+        </div>
+        <div className="summary-card">
+          <h3>Highest Market Cap</h3>
+          <p>${highestMarketCap}</p>
+        </div>
+      </div>
+
+      {/* --- Controls --- */}
       <div className="controls-section">
         <div className="search-bar">
           <input
@@ -81,6 +223,40 @@ const Dashboard = () => {
             <option value="mid">Mid Cap (101–500)</option>
             <option value="low">Low Cap (500+)</option>
           </select>
+        </div>
+      </div>
+
+      {/* --- Charts --- */}
+      <div
+        style={{
+          width: "95%",
+          margin: "0 auto 40px",
+          display: "flex",
+          gap: "40px",
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            flex: "1 1 400px",
+            background: "#121212",
+            borderRadius: "16px",
+            padding: "20px",
+          }}
+        >
+          <Bar data={top10BarData} options={top10BarOptions} />
+        </div>
+
+        <div
+          style={{
+            flex: "1 1 400px",
+            background: "#121212",
+            borderRadius: "16px",
+            padding: "20px",
+          }}
+        >
+          <Pie data={pieData} options={pieOptions} />
         </div>
       </div>
 
